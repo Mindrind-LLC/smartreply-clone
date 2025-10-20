@@ -1,0 +1,11 @@
+[project]
+name = "smartreply-clone"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.119.0",
+    "pydantic>=2.12.3",
+    "requests>=2.32.5",
+]
