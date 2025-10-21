@@ -1,11 +1,14 @@
 [project]
 name = "smartreply-clone"
 version = "0.1.0"
-description = "Add your description here"
+description = "This project is used to Add listners to the Facebook Page Comment to DM and auto DM Replays for messanger. "
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.119.0",
     "pydantic>=2.12.3",
+    "python-dotenv>=1.1.1",
     "requests>=2.32.5",
+    "sentry-sdk[fastapi]>=1.40.0",
+    "uvicorn>=0.38.0",
 ]

@@ -1,3 +1,5 @@
 .venv/
 .cursor/
 .env
+__pycache__/
+*.json
