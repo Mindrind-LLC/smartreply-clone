@@ -4,3 +4,8 @@ fastapi
 python-dotenv
 uvicorn
 sentry-sdk[fastapi]
+sqlalchemy
+langchain
+langchain-openai
+langchain-google-genai
+alembic
