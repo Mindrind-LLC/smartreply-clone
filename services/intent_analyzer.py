@@ -1,12 +1,12 @@
-import json
-from typing import Dict, Any
+import logging
+
 from langchain_openai import ChatOpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
+
+from core.config import settings
 from models.webhook_models import IntentAnalysisResponse
-from config import settings
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,6 @@ class IntentAnalyzer:
                 raise ValueError("GOOGLE_API_KEY is required when using Google provider")
             return ChatGoogleGenerativeAI(
                 model=settings.LLM_MODEL,
-                google_api_key=settings.GOOGLE_API_KEY,
                 temperature=0.1
             )
         else:
@@ -156,3 +155,12 @@ Guidelines:
                 dm_message=f"Hi {user_name}! 👋 Thanks for your comment! Feel free to reach out if you need any assistance.",
                 confidence=0.0
             )
+
+
+if __name__ == "__main__":
+    analyzer = IntentAnalyzer()
+    response = analyzer.analyze_intent_sync("I need help with my assignment", "John Doe")
+    print(response)
+    print(response.intent)
+    print(response.dm_message)
+    print(response.confidence)

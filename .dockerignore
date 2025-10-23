@@ -1,0 +1,17 @@
+.env
+.venv
+.git
+.gitignore
+*.json
+*.log
+*.txt
+*.csv
+*.xlsx
+*.xls
+*.doc
+*.docx
+*.pdf
+*.jpg
+*.jpeg
+*.png
+__pycache__/

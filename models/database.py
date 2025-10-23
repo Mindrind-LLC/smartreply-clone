@@ -1,8 +1,8 @@
-from sqlalchemy import create_engine, Column, Integer, String, Text, Boolean, DateTime, JSON
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-from datetime import datetime
 import os
+from datetime import datetime
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import create_engine, Column, Integer, String, Text, Boolean, DateTime, JSON
 
 # Database configuration
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./comments.db")

@@ -1,6 +1,5 @@
-import logging
 import sys
-from datetime import datetime
+import logging
 
 def setup_logger(name: str = "smartreply", level: int = logging.INFO) -> logging.Logger:
     """

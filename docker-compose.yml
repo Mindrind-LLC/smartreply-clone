@@ -4,18 +4,17 @@ services:
     container_name: smartreply-clone
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8000:8009"
     environment:
-      - META_APP_SECRET = d30c6f207fe88e70d3de6e359903a2f7
-      - META_APP_ID= 1822877104978054
-      - META_API_TOKEN= EAAZA55aZAPuIYBPt13VWoDf0q1ld2H9tcXgubAvYMp6snuSjZCdxyNJr1VbqZCdGGiDWt7HcayjnZAJCQ04anTt6P2xmPHRutt2MpoDTkWZAa621ysR9xVhChxvjJxvdMjpUs3JEPc3XvO6QTAou78CyYaG59yumLZBPWgSFZCzMb0Ilxjn6ulqHiHiJZAcqA5ZCnQVAHd
-
+      - META_APP_SECRET=d30c6f207fe88e70d3de6e359903a2f7
+      - META_APP_ID=1822877104978054
+      - META_API_TOKEN=EAAZA55aZAPuIYBPt13VWoDf0q1ld2H9tcXgubAvYMp6snuSjZCdxyNJr1VbqZCdGGiDWt7HcayjnZAJCQ04anTt6P2xmPHRutt2MpoDTkWZAa621ysR9xVhChxvjJxvdMjpUs3JEPc3XvO6QTAou78CyYaG59yumLZBPWgSFZCzMb0Ilxjn6ulqHiHiJZAcqA5ZCnQVAHd
     volumes:
       - ./logs:/app/logs
     networks:
       - smartreply-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/webhook"]
+      test: ["CMD", "curl", "-f", "http://localhost:8009/health"]
       interval: 30s
       timeout: 10s
       retries: 3

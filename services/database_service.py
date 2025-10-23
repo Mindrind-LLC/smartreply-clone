@@ -1,9 +1,11 @@
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
+import logging
 from datetime import datetime
 from typing import Optional, Dict, Any
+
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
+
 from models.database import Comment, get_db
-import logging
 
 logger = logging.getLogger(__name__)
 
