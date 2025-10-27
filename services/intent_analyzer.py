@@ -61,16 +61,23 @@ User name: {user_name}
 {format_instructions}
 
 Please analyze this comment and provide:
-1. Intent (should be "interested_in_services" if the user shows interest in services, otherwise "other")
-2. A personalized DM message that acknowledges their comment and offers to help
+1. Intent (choose one):
+   - "positive" - shows appreciation, satisfaction, or praise
+   - "negative" - shows dissatisfaction, complaints, or criticism
+   - "interested_in_services" - shows interest in services, asking questions, needs help
+   - "other" - neutral, informational, or not categorized
+2. A personalized DM message (leave empty for "negative" or "other" intents)
 3. Confidence score (0.0 to 1.0)
 
 Guidelines:
-- If the comment shows any interest in services, tutoring, pricing, help, or support, classify as "interested_in_services"
-- Make the DM message personal and engaging
-- Keep the DM message concise but helpful
+- For "interested_in_services": user is asking about services, pricing, help, or support
+- For "positive": user expresses satisfaction, appreciation, or praise
+- For "negative": user shows dissatisfaction, complaints, or criticism
+- For "other": neutral comments, general discussion, or information sharing
+- Generate DM message ONLY for "positive" or "interested_in_services" intents
+- Leave DM message empty for "negative" or "other" intents
+- Keep messages professional, friendly, and concise
 - Use appropriate emojis sparingly
-- Always be professional and friendly
 """)
         
         return prompt_template

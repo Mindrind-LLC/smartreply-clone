@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Dict, Any
 from sqlalchemy.orm import Session
 
+from core.config import settings
 from services.intent_analyzer import IntentAnalyzer
 from services.meta_api_client import MetaApiClient
 from services.database_service import DatabaseService
@@ -23,14 +24,18 @@ class WebhookProcessor:
             value = change.value
             
             # Check if this is a comment event
-            if value.item == "comment" and value.message:
+            if value.item == "comment" and value.verb == "add" and value.message:
                 logger.info(f"Processing comment: {value.message[:50]}...")
                 await self.process_comment(value, db)
             
+            elif value.item == "comment" and value.verb == "remove":
+                logger.info(f"Comment removed: {value.message[:50]}...")
             # Check if this is a reaction event (for logging)
             elif value.item == "reaction":
                 logger.info(f"Processing reaction: {value.reaction_type} from {value.from_user.name}")
                 # For now, we only process comments, but reactions can be logged
+            else:
+                logger.info(f"Unknown event: {value.item} {value.verb}")
                 
         except Exception as e:
             logger.error(f"Error processing webhook change: {str(e)}")
@@ -69,25 +74,26 @@ class WebhookProcessor:
             # Analyze intent using LLM
             try:
                 intent_response = self.intent_analyzer.analyze_intent_sync(message, user_name)
-                
+                if settings.DEFUALT_DM_MESSAGE:
+                    intent_response.dm_message = settings.DEFUALT_DM_MESSAGE
                 # Update comment with intent analysis
                 updated_comment = self.db_service.update_comment_with_intent(
                     db=db,
                     comment_id=comment_id,
                     intent=intent_response.intent,
-                    dm_message=intent_response.dm_message
+                    dm_message=intent_response.dm_message if intent_response.intent in ["positive", "interested_in_services"] else None
                 )
                 
                 logger.info(f"Intent analysis completed: {intent_response.intent}")
                 
-                # Send DM if user is interested in services
-                if intent_response.intent == "interested_in_services":
+                # Send DM only for "positive" or "interested_in_services" intents
+                if intent_response.intent in ["positive", "interested_in_services"] and intent_response.dm_message:
                     # Extract page_id from post_id for the API call
                     page_id = post_id.split('_')[0] if '_' in post_id else post_id
                     await self.send_dm_and_update_record(comment_id, intent_response.dm_message, db, page_id)
                     logger.info(f"Comment intent is '{intent_response.intent}', sending DM")
                 else:
-                    logger.info(f"Comment intent is '{intent_response.intent}', not sending DM")
+                    logger.info(f"Comment intent is '{intent_response.intent}', not sending DM (intent doesn't require DM)")
                     
             except Exception as e:
                 logger.error(f"Error analyzing intent for comment {comment_id}: {str(e)}")
