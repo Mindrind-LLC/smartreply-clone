@@ -1,6 +1,6 @@
 services:
   smartreply-clone:
-    image: awais2512/smartreply-clone:latest
+    build: .
     container_name: smartreply-clone
     restart: unless-stopped
     ports:
@@ -9,11 +9,41 @@ services:
       - META_APP_SECRET=d30c6f207fe88e70d3de6e359903a2f7
       - META_APP_ID=1822877104978054
       - META_API_TOKEN=EAAZA55aZAPuIYBPt13VWoDf0q1ld2H9tcXgubAvYMp6snuSjZCdxyNJr1VbqZCdGGiDWt7HcayjnZAJCQ04anTt6P2xmPHRutt2MpoDTkWZAa621ysR9xVhChxvjJxvdMjpUs3JEPc3XvO6QTAou78CyYaG59yumLZBPWgSFZCzMb0Ilxjn6ulqHiHiJZAcqA5ZCnQVAHd
+      - PAGE_ACCESS_TOKEN=EAAZA55aZAPuIYBPZBDQfw1tUlaDsOhpNOh04ptnxzTvGMhooM2CpMXVfjFuPFqvKzTK63AR51ZBQ5Cp7dFZBUdyGQq8TF5cHCU3PSEmYbSkDXwiTTuFbe77Wfc66bKyI3llFfjPNZAdeKCZCgwNQWxZA6p7U8Jx5NTlNSxS14Spqf1mqlsCVZBoIwYp7MYlB9Q6LVgdow2aPImjKCXkcCOryU2ZAlQ3TZAtmUZBmxH2WpzJKYcgZD
+
+      # LLM Configuration
+      # Choose one provider and set the corresponding API key
+      # OPENAI_API_KEY=your_openai_api_key_here
+      - GOOGLE_API_KEY=AIzaSyDTOLjxPNVDP5scH4nwGjy5ZgkKF4n-AdM
+
+      # LLM Provider Settings
+      # Options: "openai" or "google"
+      - LLM_PROVIDER=google
+      # OpenAI models: "gpt-3.5-turbo", "gpt-4", "gpt-4-turbo"
+      # Google models: "gemini-pro", "gemini-pro-vision"
+      - LLM_MODEL=gemini-2.5-flash
+
+      # Database Configuration
+      # SQLite database file path
+      - DATABASE_URL=sqlite:///./comments.db
+
+      # Optional: Logging Level
+      # Options: DEBUG, INFO, WARNING, ERROR
+      - LOG_LEVEL=INFO
+      
     volumes:
       - ./logs:/app/logs
     networks:
       - smartreply-network
-    healthcheck:
+
+    command: >
+      sh -c "
+        pip install -r requirements.txt &&
+        echo '🚀 Starting application…' &&
+        python main.py
+      "
+
+      healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8009/health"]
       interval: 30s
       timeout: 10s
