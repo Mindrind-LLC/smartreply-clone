@@ -4,7 +4,7 @@ services:
     container_name: smartreply-clone
     restart: unless-stopped
     ports:
-      - "8000:8009"
+      - "8009:8009"
     environment:
       - META_APP_SECRET=d30c6f207fe88e70d3de6e359903a2f7
       - META_APP_ID=1822877104978054
@@ -33,17 +33,11 @@ services:
       
     volumes:
       - ./logs:/app/logs
+      - ./comments.db:/app/comments.db
     networks:
       - smartreply-network
 
-    command: >
-      sh -c "
-        pip install -r requirements.txt &&
-        echo '🚀 Starting application…' &&
-        python main.py
-      "
-
-      healthcheck:
+    healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8009/health"]
       interval: 30s
       timeout: 10s

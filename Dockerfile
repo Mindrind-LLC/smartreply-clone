@@ -12,25 +12,19 @@ RUN apt-get update && apt-get install -y \
 # Install uv
 RUN pip install uv
 
-# Copy dependency files
-COPY pyproject.toml uv.lock ./
+# Copy all application code
+COPY . .
 
 # Install Python dependencies
 RUN uv sync --frozen
 
-# Copy application code
-COPY main.py ./
-
-# Create non-root user for security
-RUN useradd --create-home --shell /bin/bash app && chown -R app:app /app
-USER app
 
 # Expose port 8009
 EXPOSE 8009
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8009/webhook || exit 1
+    CMD curl -f http://localhost:8009/health || exit 1
 
-# Run the application
-CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8009"]
+# Run the application using python main.py
+CMD ["python", "main.py"]
