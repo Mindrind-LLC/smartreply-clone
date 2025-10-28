@@ -111,7 +111,7 @@ class WebhookProcessor:
         """Send DM and update database record"""
         try:
             # Send private reply via Meta API
-            api_response = await self.meta_api_client.send_private_reply(comment_id, dm_message, page_id)
+            api_response = self.meta_api_client.send_private_reply_sync(comment_id, dm_message, page_id)
             
             if api_response.success:
                 # Mark DM as sent in database
