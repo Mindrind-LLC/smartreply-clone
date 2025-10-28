@@ -18,10 +18,13 @@ class Settings:
     # Database Configuration
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./comments.db")
     
-    # Meta GraphQL API
-    META_GRAPHQL_BASE_URL: str = "https://graph.facebook.com/v19.0",
+    # Meta Graph API base URL (no version segment)
+    META_GRAPHQL_BASE_URL: str = "https://graph.facebook.com"
     
-    DEFUALT_DM_MESSAGE: str = os.getenv("DEFUALT_DM_MESSAGE", "")
+    DEFUALT_DM_MESSAGE: str = os.getenv(
+        "DEFUALT_DM_MESSAGE",
+        "Hi there! I’m Lisa. I can get you a free quote right away, could you please tell me whether you need help with an online class, exam, or assignment for your school?\n\nWhat exactly do you need help with? Online Class, Exam, Homework, Assignment, Essay Writing?"
+    )
     
     # Few-shot examples for DM generation
     DM_EXAMPLES = [

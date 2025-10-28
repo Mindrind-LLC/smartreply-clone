@@ -29,7 +29,8 @@ class WebhookProcessor:
                 await self.process_comment(value, db)
             
             elif value.item == "comment" and value.verb == "remove":
-                logger.info(f"Comment removed: {value.message[:50]}...")
+                logger.info(f"Comment removed webhook received")
+                await self.delete_comment(value, db)
             # Check if this is a reaction event (for logging)
             elif value.item == "reaction":
                 logger.info(f"Processing reaction: {value.reaction_type} from {value.from_user.name}")
@@ -43,9 +44,13 @@ class WebhookProcessor:
     async def process_comment(self, value, db: Session):
         """Process a comment event"""
         try:
-            # Extract comment data
-            comment_id = value.comment_id
-            post_id = value.post_id
+            # Extract comment data (normalize IDs)
+            full_comment_id = value.comment_id
+            full_post_id = value.post_id
+
+            # Store only trailing parts in DB
+            comment_id = full_comment_id.split('_')[-1] if full_comment_id else None
+            post_id = full_post_id.split('_')[-1] if full_post_id else None
             user_id = value.from_user.id
             user_name = value.from_user.name
             message = value.message
@@ -66,7 +71,7 @@ class WebhookProcessor:
                 user_name=user_name,
                 message=message,
                 created_time=created_time,
-                raw_json=value.dict()
+                raw_json=(value.model_dump() if hasattr(value, "model_dump") else value.__dict__)
             )
             
             logger.info(f"Created comment record with ID {comment_record.id}")
@@ -88,8 +93,9 @@ class WebhookProcessor:
                 
                 # Send DM only for "positive" or "interested_in_services" intents
                 if intent_response.intent in ["positive", "interested_in_services"] and intent_response.dm_message:
-                    # Extract page_id from post_id for the API call
-                    page_id = post_id.split('_')[0] if '_' in post_id else post_id
+                    # Extract page_id from full post id for API call
+                    page_id = (full_post_id.split('_')[0] if (full_post_id and '_' in full_post_id) else full_post_id)
+                    # Meta API expects the pure comment id (without post prefix)
                     await self.send_dm_and_update_record(comment_id, intent_response.dm_message, db, page_id)
                     logger.info(f"Comment intent is '{intent_response.intent}', sending DM")
                 else:
@@ -105,7 +111,7 @@ class WebhookProcessor:
         """Send DM and update database record"""
         try:
             # Send private reply via Meta API
-            api_response = self.meta_api_client.send_private_reply_sync(comment_id, dm_message, page_id)
+            api_response = await self.meta_api_client.send_private_reply(comment_id, dm_message, page_id)
             
             if api_response.success:
                 # Mark DM as sent in database
@@ -116,3 +122,28 @@ class WebhookProcessor:
                 
         except Exception as e:
             logger.error(f"Error sending DM for comment {comment_id}: {str(e)}")
+    
+    async def delete_comment(self, value, db: Session):
+        """Delete comment from database when removed webhook is received"""
+        try:
+            # Extract comment_id from webhook
+            full_comment_id = value.comment_id
+            full_post_id = value.post_id
+
+            # Store only trailing parts in DB
+            comment_id = full_comment_id.split('_')[-1] if full_comment_id else None
+            
+            if not comment_id:
+                logger.warning(f"No comment_id found in remove webhook")
+                return
+            
+            # Delete comment from database
+            deleted = self.db_service.delete_comment_by_id(db, comment_id)
+            
+            if deleted:
+                logger.info(f"Comment {comment_id} deleted successfully from database")
+            else:
+                logger.warning(f"Comment {comment_id} not found in database (may have already been deleted)")
+                
+        except Exception as e:
+            logger.error(f"Error deleting comment: {str(e)}")
