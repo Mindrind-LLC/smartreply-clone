@@ -76,8 +76,8 @@ async def webhook_events(request: Request, db: Session = Depends(get_db)):
         
         # Process each entry in the webhook
         for entry in webhook_data.entry:
-            with open(f"{entry.changes[0].value.from_user.name}_{entry.changes[0].value.item}_{entry.changes[0].value.verb}.json", "w") as f:
-                json.dump(entry.model_dump(), f, indent=4)
+            # with open(f"{entry.changes[0].value.from_user.name}_{entry.changes[0].value.item}_{entry.changes[0].value.verb}.json", "w") as f:
+            #     json.dump(entry.model_dump(), f, indent=4)
             for change in entry.changes:
                 await webhook_processor.process_webhook_change(change, db)
         
