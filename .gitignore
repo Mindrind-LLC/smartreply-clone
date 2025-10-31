@@ -4,4 +4,4 @@
 __pycache__/
 *.json
 server_commands.txt
-*.db
+comments.db

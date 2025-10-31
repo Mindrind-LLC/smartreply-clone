@@ -206,3 +206,32 @@ class DatabaseService:
         except Exception as e:
             logger.error(f"Error getting pending DMs: {str(e)}")
             return []
+    
+    def delete_comment_by_id(self, db: Session, comment_id: str) -> bool:
+        """
+        Delete comment by comment_id
+        
+        Args:
+            db: Database session
+            comment_id: Comment ID to delete
+            
+        Returns:
+            True if deleted successfully, False if not found
+        """
+        try:
+            comment = db.query(Comment).filter(Comment.comment_id == comment_id).first()
+            
+            if not comment:
+                logger.warning(f"Comment with comment_id {comment_id} not found for deletion")
+                return False
+            
+            db.delete(comment)
+            db.commit()
+            
+            logger.info(f"Deleted comment {comment_id} from database")
+            return True
+            
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Error deleting comment {comment_id}: {str(e)}")
+            return False

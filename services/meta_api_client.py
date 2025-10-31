@@ -12,9 +12,30 @@ class MetaApiClient:
     def __init__(self):
         self.base_url = settings.META_GRAPHQL_BASE_URL
         self.page_access_token = settings.PAGE_ACCESS_TOKEN
+        self.app_id = settings.META_APP_ID
+        self.app_secret = settings.META_APP_SECRET
         
         if not self.page_access_token:
             raise ValueError("PAGE_ACCESS_TOKEN is required for Meta API client")
+        if not self.app_id or not self.app_secret:
+            raise ValueError("META_APP_ID and META_APP_SECRET are required for token validation")
+    
+    def validate_page_access_token(self, input_token: str) -> None:
+        """Validate the PAGE_ACCESS_TOKEN using Facebook debug_token API."""
+        url = "https://graph.facebook.com/v24.0/debug_token"
+        params = {
+            "input_token": input_token,
+            "access_token": f"{self.app_id}|{self.app_secret}",
+        }
+        try:
+            resp = requests.get(url, params=params, timeout=20)
+            if resp.status_code != 200:
+                raise ValueError(f"Token validation HTTP error: {resp.status_code} - {resp.text}")
+            data = resp.json().get("data", {})
+            if not data.get("is_valid", False):
+                raise ValueError(f"Invalid PAGE_ACCESS_TOKEN: {data}")
+        except requests.RequestException as e:
+            raise ValueError(f"Failed to validate PAGE_ACCESS_TOKEN: {str(e)}") from e
     
     async def send_private_reply(self, comment_id: str, message: str, page_id: str = None) -> MetaApiResponse:
         """
@@ -98,6 +119,8 @@ class MetaApiClient:
         Synchronous version of send_private_reply for compatibility
         """
         try:
+            # Validate token before sending
+            self.validate_page_access_token(self.page_access_token)
             # Extract page_id from comment_id if not provided
             if not page_id:
                 # Comment ID format is usually: {post_id}_{comment_id}
