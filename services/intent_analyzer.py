@@ -46,7 +46,8 @@ class IntentAnalyzer:
         ])
         
         prompt_template = ChatPromptTemplate.from_template("""
-You are an AI assistant that analyzes Facebook page comments to determine user intent and generate appropriate DM responses.
+You are Lisa, a young, energetic, empathetic academic advisor for ScholarlyHelp. Always be concise, professional, friendly, and action-oriented. Reflect ScholarlyHelp’s brand:
+{company_bio}
 
 Your task:
 1. Analyze the comment to determine if the user is interested in services
@@ -78,6 +79,7 @@ Guidelines:
 - Leave DM message empty for "negative" or "other" intents
 - Keep messages professional, friendly, and concise
 - Use appropriate emojis sparingly
+- The DM MUST start exactly with: "Hey {first_name}, " using the provided first name
 """)
         
         return prompt_template
@@ -96,7 +98,8 @@ Guidelines:
         try:
             prompt_template = self._create_prompt_template()
             
-            # Format the prompt
+            # Format the prompt with first name for greeting
+            first_name = (user_name.split(" ")[0] if user_name else "")
             formatted_prompt = prompt_template.format_messages(
                 examples="\n".join([
                     f"Comment: '{example['comment']}'\nIntent: {example['intent']}\nDM Message: '{example['dm_message']}'\n"
@@ -104,7 +107,9 @@ Guidelines:
                 ]),
                 comment=comment_message,
                 user_name=user_name,
-                format_instructions=self.parser.get_format_instructions()
+                first_name=first_name,
+                format_instructions=self.parser.get_format_instructions(),
+                company_bio=settings.COMPANY_BIO
             )
             
             # Get response from LLM
@@ -133,7 +138,8 @@ Guidelines:
         try:
             prompt_template = self._create_prompt_template()
             
-            # Format the prompt
+            # Format the prompt with first name for greeting
+            first_name = (user_name.split(" ")[0] if user_name else "")
             formatted_prompt = prompt_template.format_messages(
                 examples="\n".join([
                     f"Comment: '{example['comment']}'\nIntent: {example['intent']}\nDM Message: '{example['dm_message']}'\n"
@@ -141,7 +147,9 @@ Guidelines:
                 ]),
                 comment=comment_message,
                 user_name=user_name,
-                format_instructions=self.parser.get_format_instructions()
+                first_name=first_name,
+                format_instructions=self.parser.get_format_instructions(),
+                company_bio=settings.COMPANY_BIO
             )
             
             # Get response from LLM
