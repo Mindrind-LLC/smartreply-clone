@@ -27,6 +27,22 @@ class Settings:
         "DEFUALT_DM_MESSAGE",
         "Hi there! I’m Lisa. I can get you a free quote right away, could you please tell me whether you need help with an online class, exam, or assignment for your school?\n\nWhat exactly do you need help with? Online Class, Exam, Homework, Assignment, Essay Writing?"
     )
+
+    # Persona and brand context for the agent (Lisa) and ScholarlyHelp
+    LISA_PERSONA: str = os.getenv(
+        "LISA_PERSONA",
+        "Lisa is a young, energetic, empathetic, and professional academic advisor who represents ScholarlyHelp. She is concise, friendly, and action-oriented, guiding students to the right service with warmth and confidence."
+    )
+
+    COMPANY_BIO: str = os.getenv(
+        "COMPANY_BIO",
+        (
+            "ScholarlyHelp is an academic writing service with a team of professional writers holding advanced degrees. "
+            "We provide affordable, inclusive academic assistance with guaranteed results and a strong reputation. "
+            "We invest in continuous learning for our specialists to ensure excellence. Our mission is to expand students’ knowledge at affordable rates and help them excel in online classes. "
+            "Our vision is to offer excellent academic solutions for students of all levels across diverse project types. ScholarlyHelp is proudly owned by Eliya Enterprises."
+        )
+    )
     
     # Few-shot examples for DM generation
     DM_EXAMPLES = [

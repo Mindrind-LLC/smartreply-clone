@@ -79,8 +79,7 @@ class WebhookProcessor:
             # Analyze intent using LLM
             try:
                 intent_response = self.intent_analyzer.analyze_intent_sync(message, user_name)
-                if settings.DEFUALT_DM_MESSAGE:
-                    intent_response.dm_message = settings.DEFUALT_DM_MESSAGE
+                # Let LLM handle greeting; no manual prefixing here
                 # Update comment with intent analysis
                 updated_comment = self.db_service.update_comment_with_intent(
                     db=db,
