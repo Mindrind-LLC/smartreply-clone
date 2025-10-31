@@ -8,6 +8,8 @@ class Settings:
     # Meta API Configuration
     META_API_TOKEN: str = os.getenv("META_API_TOKEN", "")
     PAGE_ACCESS_TOKEN: str = os.getenv("PAGE_ACCESS_TOKEN", "")
+    META_APP_ID: str = os.getenv("META_APP_ID", "")
+    META_APP_SECRET: str = os.getenv("META_APP_SECRET", "")
     
     # LLM Configuration
     # OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
