@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from models.database import get_db, create_tables, Comment
 from models.webhook_models import WebhookData
 from services.webhook_processor import WebhookProcessor
+from services.messenger_service import MessengerService
 from core.config import settings
 
 # Load environment variables
@@ -42,6 +43,7 @@ app = FastAPI(title="Smart Reply Clone", version="1.0.0", lifespan=lifespan)
 
 # Initialize services
 webhook_processor = WebhookProcessor()
+messenger_service = MessengerService()
 
 VERIFY_TOKEN = os.getenv("META_API_TOKEN")  # must match exactly what you entered in Meta dashboard
 
@@ -71,12 +73,30 @@ async def webhook_events(request: Request, db: Session = Depends(get_db)):
         # Get webhook data
         data = await request.json()
         logger.info(f"Received webhook event: {json.dumps(data, indent=2)}")
-        # Parse webhook data
+        # Branch: Messenger vs Feed webhook
+        entries = data.get("entry", []) or []
+        if entries and isinstance(entries, list) and entries[0].get("messaging"):
+            # Handle Messenger messaging events without feed Pydantic model
+            for entry in entries:
+                page_id = entry.get("id")
+                events = entry.get("messaging", []) or []
+                for ev in events:
+                    # Only process if text exists and not from our page
+                    should, psid, text = messenger_service.should_process_message_event(ev, page_id)
+                    if not should:
+                        continue
+                    try:
+                        messenger_service.handle_incoming_message(page_id=page_id, psid=psid, text=text)
+                    except Exception as e:
+                        logger.error(f"Error handling messaging event for PSID {psid}: {str(e)}")
+            return {"status": "received", "processed": True}
+
+        # Else: parse feed changes webhook data with Pydantic
         webhook_data = WebhookData(**data)
         
         # Process each entry in the webhook
         for entry in webhook_data.entry:
-            # with open(f"{entry.changes[0].value.from_user.name}_{entry.changes[0].value.item}_{entry.changes[0].value.verb}.json", "w") as f:
+            # with open(f"message.json", "w") as f:
             #     json.dump(entry.model_dump(), f, indent=4)
             for change in entry.changes:
                 await webhook_processor.process_webhook_change(change, db)
