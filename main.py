@@ -86,7 +86,7 @@ async def webhook_events(request: Request, db: Session = Depends(get_db)):
                     if not should:
                         continue
                     try:
-                        messenger_service.handle_incoming_message(page_id=page_id, psid=psid, text=text)
+                        messenger_service.handle_incoming_message(page_id=page_id, psid=psid, text=text, db=db)
                     except Exception as e:
                         logger.error(f"Error handling messaging event for PSID {psid}: {str(e)}")
             return {"status": "received", "processed": True}

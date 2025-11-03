@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
-from models.database import Comment, get_db
+from models.database import Comment, ChatMessage, Chat, get_db
 
 logger = logging.getLogger(__name__)
 
@@ -206,6 +206,84 @@ class DatabaseService:
         except Exception as e:
             logger.error(f"Error getting pending DMs: {str(e)}")
             return []
+
+    # -------- Messenger chat history --------
+    def add_chat_message(self, db: Session, page_id: str, psid: str, role: str, text: str) -> ChatMessage:
+        try:
+            msg = ChatMessage(page_id=page_id, psid=psid, role=role, text=text, created_time=datetime.utcnow())
+            db.add(msg)
+            db.commit()
+            db.refresh(msg)
+            return msg
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Error adding chat message: {str(e)}")
+            raise
+
+    def get_chat_history(self, db: Session, psid: str, limit: int = 25) -> list[ChatMessage]:
+        try:
+            return (
+                db.query(ChatMessage)
+                .filter(ChatMessage.psid == psid)
+                .order_by(ChatMessage.created_time.desc())
+                .limit(limit)
+                .all()
+            )
+        except Exception as e:
+            logger.error(f"Error fetching chat history for psid={psid}: {str(e)}")
+            return []
+
+    # -------- Messenger chat leads --------
+    def get_chat_by_psid(self, db: Session, psid: str) -> Optional[Chat]:
+        try:
+            return db.query(Chat).filter(Chat.psid == psid).first()
+        except Exception as e:
+            logger.error(f"Error fetching chat record for psid={psid}: {str(e)}")
+            return None
+
+    def upsert_chat_record(
+        self,
+        db: Session,
+        page_id: str,
+        psid: str,
+        user_name: Optional[str] = None,
+        phone_number: Optional[str] = None,
+        last_message: Optional[str] = None,
+    ) -> Chat:
+        """
+        Create or update a chat lead record for Messenger conversations.
+        """
+        try:
+            chat = db.query(Chat).filter(Chat.psid == psid).first()
+
+            now = datetime.utcnow()
+            if chat:
+                if user_name:
+                    chat.user_name = user_name
+                if phone_number:
+                    chat.phone_number = phone_number
+                if last_message:
+                    chat.last_message = last_message
+                chat.updated_at = now
+            else:
+                chat = Chat(
+                    page_id=page_id,
+                    psid=psid,
+                    user_name=user_name,
+                    phone_number=phone_number,
+                    last_message=last_message,
+                    created_at=now,
+                    updated_at=now,
+                )
+                db.add(chat)
+
+            db.commit()
+            db.refresh(chat)
+            return chat
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Error upserting chat record for psid={psid}: {str(e)}")
+            raise
     
     def delete_comment_by_id(self, db: Session, comment_id: str) -> bool:
         """
