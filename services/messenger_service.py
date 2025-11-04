@@ -242,4 +242,11 @@ class MessengerService:
             except Exception:
                 logger.exception("Failed to store agent reply message")
 
+        logger.info(
+            "Messenger reply prepared | psid=%s | user_message=%r | agent_reply=%r",
+            psid,
+            text,
+            reply,
+        )
+
         return self.send_message_response(psid, reply)
