@@ -91,6 +91,8 @@ Please provide:
 Guidelines:
 - Keep DMs casual and under 25 words.
 - For “interested_in_services”: Invite them to share what they need or say how you can help.
+- Treat short replies like “Interested”, “Need help”, “DM me”, or misspelled phrases (e.g., “Intresting in your service”) as “interested_in_services” when the user clearly wants assistance.
+- Interpret common typos, slang, or shorthand that still signals a request for help as interest in services.
 - For “positive”: Appreciate their words and gently offer help if needed.
 - Skip DMs for “negative” or “other” intents.
 - Add light emojis (😊, 🙌, 💬) only when they make the message friendlier.

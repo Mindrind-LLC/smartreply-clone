@@ -1,15 +1,16 @@
 import os
 import json
 import logging
+import asyncio
 from datetime import datetime
 from re import T
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Depends
 from sqlalchemy.orm import Session
 
 # Import our custom modules
-from models.database import get_db, create_tables, Comment
+from models.database import get_db, create_tables, Comment, SessionLocal
 from models.webhook_models import WebhookData
 from services.webhook_processor import WebhookProcessor
 from services.messenger_service import MessengerService
@@ -25,8 +26,63 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Async processing queues and worker tracking
+message_task_queue: Optional[asyncio.Queue] = None
+comment_task_queue: Optional[asyncio.Queue] = None
+worker_tasks: list[asyncio.Task] = []
+
 # Create database tables on startup
 from contextlib import asynccontextmanager
+
+
+async def _messaging_worker(queue: asyncio.Queue):
+    while True:
+        try:
+            task = await queue.get()
+        except asyncio.CancelledError:
+            break
+        try:
+            page_id = task["page_id"]
+            psid = task["psid"]
+            text = task["text"]
+
+            def _run():
+                db = SessionLocal()
+                try:
+                    messenger_service.handle_incoming_message(page_id=page_id, psid=psid, text=text, db=db)
+                finally:
+                    db.close()
+
+            await asyncio.to_thread(_run)
+        except asyncio.CancelledError:
+            break
+        except Exception as exc:
+            logger.exception("Messaging worker failed for psid=%s: %s", task.get("psid"), exc)
+        finally:
+            queue.task_done()
+
+
+async def _comment_worker(queue: asyncio.Queue):
+    while True:
+        try:
+            change = await queue.get()
+        except asyncio.CancelledError:
+            break
+        try:
+            def _run():
+                db = SessionLocal()
+                try:
+                    asyncio.run(webhook_processor.process_webhook_change(change, db))
+                finally:
+                    db.close()
+
+            await asyncio.to_thread(_run)
+        except asyncio.CancelledError:
+            break
+        except Exception as exc:
+            logger.exception("Comment worker failed: %s", exc)
+        finally:
+            queue.task_done()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -34,8 +90,21 @@ async def lifespan(app: FastAPI):
     # Startup
     create_tables()
     logger.info("Database tables created successfully")
+    global message_task_queue, comment_task_queue, worker_tasks
+    message_task_queue = asyncio.Queue()
+    comment_task_queue = asyncio.Queue()
+    worker_tasks = [
+        asyncio.create_task(_messaging_worker(message_task_queue), name="messaging-worker"),
+        asyncio.create_task(_comment_worker(comment_task_queue), name="comment-worker"),
+    ]
     yield
     # Shutdown
+    for task in worker_tasks:
+        task.cancel()
+    await asyncio.gather(*worker_tasks, return_exceptions=True)
+    worker_tasks = []
+    message_task_queue = None
+    comment_task_queue = None
     logger.info("Application shutting down")
 
 # Initialize FastAPI app
@@ -67,7 +136,7 @@ async def verify_webhook(request: Request):
         return "Verification token mismatch", 403
 
 @app.post("/webhook")
-async def webhook_events(request: Request, db: Session = Depends(get_db)):
+async def webhook_events(request: Request):
     """Main webhook handler for processing Facebook page events"""
     try:
         # Get webhook data
@@ -85,10 +154,17 @@ async def webhook_events(request: Request, db: Session = Depends(get_db)):
                     should, psid, text = messenger_service.should_process_message_event(ev, page_id)
                     if not should:
                         continue
-                    try:
-                        messenger_service.handle_incoming_message(page_id=page_id, psid=psid, text=text, db=db)
-                    except Exception as e:
-                        logger.error(f"Error handling messaging event for PSID {psid}: {str(e)}")
+                    if message_task_queue is None:
+                        logger.warning("Message queue not ready; processing inline")
+                        db = SessionLocal()
+                        try:
+                            messenger_service.handle_incoming_message(page_id=page_id, psid=psid, text=text, db=db)
+                        except Exception as e:
+                            logger.error(f"Error handling messaging event for PSID {psid}: {str(e)}")
+                        finally:
+                            db.close()
+                    else:
+                        await message_task_queue.put({"page_id": page_id, "psid": psid, "text": text})
             return {"status": "received", "processed": True}
 
         # Else: parse feed changes webhook data with Pydantic
@@ -99,7 +175,15 @@ async def webhook_events(request: Request, db: Session = Depends(get_db)):
             # with open(f"message.json", "w") as f:
             #     json.dump(entry.model_dump(), f, indent=4)
             for change in entry.changes:
-                await webhook_processor.process_webhook_change(change, db)
+                if comment_task_queue is None:
+                    logger.warning("Comment queue not ready; processing inline")
+                    db = SessionLocal()
+                    try:
+                        await webhook_processor.process_webhook_change(change, db)
+                    finally:
+                        db.close()
+                else:
+                    await comment_task_queue.put(change)
         
         return {"status": "received", "processed": True}
         

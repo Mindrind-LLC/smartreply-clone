@@ -97,11 +97,13 @@ class MessengerService:
             text = m.get("message")
             from_obj = m.get("from") or {}
             from_id = str(from_obj.get("id")) if from_obj else None
+            from_name = from_obj.get("name") if from_obj else None
             role = "agent" if from_id == str(page_id) else "user"
             formatted.append({
                 "role": role,
                 "text": text,
                 "from_id": from_id,
+                "from_name": from_name,
                 "created_time": m.get("created_time")
             })
         return formatted
@@ -181,10 +183,24 @@ class MessengerService:
         formatted = self.format_messages_with_roles(history, page_id)
         logger.info(f"Loaded {len(formatted)} messages for context")
 
+        user_name = None
+        for item in formatted:
+            if item.get("role") == "user" and item.get("from_id") == psid:
+                user_name = item.get("from_name")
+                if user_name:
+                    break
+
         # Persist latest user message
         phone_number = self.extract_phone_number(text)
 
         if db is not None:
+            if not user_name:
+                try:
+                    existing_chat = self.db_service.get_chat_by_psid(db, psid)
+                    if existing_chat and existing_chat.user_name:
+                        user_name = existing_chat.user_name
+                except Exception:
+                    logger.exception("Failed to load existing chat record for psid=%s", psid)
             try:
                 self.db_service.add_chat_message(db, page_id=page_id, psid=psid, role="user", text=text)
             except Exception:
@@ -194,6 +210,7 @@ class MessengerService:
                     db,
                     page_id=page_id,
                     psid=psid,
+                    user_name=user_name,
                     phone_number=phone_number,
                     last_message=text,
                 )

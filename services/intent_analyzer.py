@@ -143,7 +143,8 @@ class IntentAnalyzer:
                 user_name=user_name,
                 first_name=first_name,
                 format_instructions=self.parser.get_format_instructions(),
-                company_bio=settings.COMPANY_BIO
+                company_bio=settings.COMPANY_BIO,
+                lisa_persona=get_lisa_persona(),
             )
             
             # Get response from LLM
