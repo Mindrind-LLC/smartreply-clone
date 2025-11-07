@@ -4,6 +4,7 @@ from typing import Dict, Any
 from sqlalchemy.orm import Session
 
 from core.config import settings
+from services.comment_moderator import CommentModerator
 from services.intent_analyzer import IntentAnalyzer
 from services.meta_api_client import MetaApiClient
 from services.database_service import DatabaseService
@@ -17,6 +18,7 @@ class WebhookProcessor:
         self.intent_analyzer = IntentAnalyzer()
         self.meta_api_client = MetaApiClient()
         self.db_service = DatabaseService()
+        self.comment_moderator = CommentModerator()
     
     async def process_webhook_change(self, change, db: Session):
         """Process individual webhook change"""
@@ -89,6 +91,39 @@ class WebhookProcessor:
                 )
                 
                 logger.info(f"Intent analysis completed: {intent_response.intent}")
+
+                should_remove, removal_reason = self.comment_moderator.should_remove_comment(
+                    message, intent_response.intent
+                )
+                if should_remove:
+                    logger.warning(
+                        f"Removing harmful comment {full_comment_id} due to {removal_reason}"
+                    )
+                    removal_response = self.comment_moderator.delete_comment(full_comment_id)
+                    if removal_response.success:
+                        try:
+                            self.db_service.log_deleted_comment(
+                                db=db,
+                                comment_id=comment_id,
+                                post_id=post_id,
+                                user_id=user_id,
+                                user_name=user_name,
+                                message=message,
+                                intent=intent_response.intent,
+                                comment_timestamp=created_time,
+                                removal_reason=removal_reason,
+                            )
+                        except Exception as log_err:
+                            logger.error(f"Failed to log deleted comment {comment_id}: {log_err}")
+                        self.db_service.delete_comment_by_id(db, comment_id)
+                        logger.info(
+                            f"Comment {comment_id} removed from Meta and database"
+                        )
+                    else:
+                        logger.error(
+                            f"Failed to delete comment {comment_id}: {removal_response.error}"
+                        )
+                    return
                 
                 # Send DM only for "positive" or "interested_in_services" intents
                 if intent_response.intent in ["positive", "interested_in_services"] and intent_response.dm_message:
@@ -135,6 +170,23 @@ class WebhookProcessor:
             if not comment_id:
                 logger.warning(f"No comment_id found in remove webhook")
                 return
+
+            existing_comment = self.db_service.get_comment_by_id(db, comment_id)
+            if existing_comment:
+                try:
+                    self.db_service.log_deleted_comment(
+                        db=db,
+                        comment_id=existing_comment.comment_id,
+                        post_id=existing_comment.post_id,
+                        user_id=existing_comment.user_id,
+                        user_name=existing_comment.user_name,
+                        message=existing_comment.message,
+                        intent=existing_comment.intent,
+                        comment_timestamp=existing_comment.created_time,
+                        removal_reason="webhook_remove",
+                    )
+                except Exception as log_err:
+                    logger.error(f"Failed to log webhook removed comment {comment_id}: {log_err}")
             
             # Delete comment from database
             deleted = self.db_service.delete_comment_by_id(db, comment_id)
