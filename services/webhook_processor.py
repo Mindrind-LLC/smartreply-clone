@@ -115,10 +115,15 @@ class WebhookProcessor:
                             )
                         except Exception as log_err:
                             logger.error(f"Failed to log deleted comment {comment_id}: {log_err}")
-                        self.db_service.delete_comment_by_id(db, comment_id)
-                        logger.info(
-                            f"Comment {comment_id} removed from Meta and database"
-                        )
+                        if comment_record:
+                            self.db_service.delete_comment_by_id(db, comment_id)
+                            logger.info(
+                                f"Comment {comment_id} removed from Meta and database"
+                            )
+                        else:
+                            logger.info(
+                                f"Comment {comment_id} not persisted yet; skipping DB delete"
+                            )
                     else:
                         logger.error(
                             f"Failed to delete comment {comment_id}: {removal_response.error}"
@@ -163,6 +168,7 @@ class WebhookProcessor:
             # Extract comment_id from webhook
             full_comment_id = value.comment_id
             full_post_id = value.post_id
+            post_id = full_post_id.split('_')[-1] if full_post_id else None
 
             # Store only trailing parts in DB
             comment_id = full_comment_id.split('_')[-1] if full_comment_id else None
@@ -173,28 +179,11 @@ class WebhookProcessor:
 
             existing_comment = self.db_service.get_comment_by_id(db, comment_id)
             if existing_comment:
-                try:
-                    self.db_service.log_deleted_comment(
-                        db=db,
-                        comment_id=existing_comment.comment_id,
-                        post_id=existing_comment.post_id,
-                        user_id=existing_comment.user_id,
-                        user_name=existing_comment.user_name,
-                        message=existing_comment.message,
-                        intent=existing_comment.intent,
-                        comment_timestamp=existing_comment.created_time,
-                        removal_reason="webhook_remove",
-                    )
-                except Exception as log_err:
-                    logger.error(f"Failed to log webhook removed comment {comment_id}: {log_err}")
-            
-            # Delete comment from database
-            deleted = self.db_service.delete_comment_by_id(db, comment_id)
-            
-            if deleted:
-                logger.info(f"Comment {comment_id} deleted successfully from database")
-            else:
-                logger.warning(f"Comment {comment_id} not found in database (may have already been deleted)")
+                self.db_service.delete_comment_by_id(db, comment_id)
+                logger.info(f"Comment {comment_id} deleted from database due to webhook remove")
+                return
+
+            logger.info(f"Comment {comment_id} not found in database; likely removed before persistence")
                 
         except Exception as e:
             logger.error(f"Error deleting comment: {str(e)}")

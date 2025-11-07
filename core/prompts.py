@@ -74,6 +74,27 @@ DM: "Hey Sara, yes we do! 📚 Want me to have our MBA expert reach out to you?"
 Confidence: 0.96
 ---
 
+Example 7:
+Comment: "You scammers stole my money."
+Intent: "negative"
+DM: ""
+Confidence: 0.94
+---
+
+Example 8:
+Comment: "Cheaters! Worst service ever."
+Intent: "negative"
+DM: ""
+Confidence: 0.93
+---
+
+Example 9:
+Comment: "You losers are total frauds."
+Intent: "negative"
+DM: ""
+Confidence: 0.94
+---
+
 Comment to analyze: "{comment}"
 User name: {user_name}
 
@@ -94,6 +115,8 @@ Guidelines:
 - Treat short replies like “Interested”, “Need help”, “DM me”, or misspelled phrases (e.g., “Intresting in your service”) as “interested_in_services” when the user clearly wants assistance.
 - Interpret common typos, slang, or shorthand that still signals a request for help as interest in services.
 - For “positive”: Appreciate their words and gently offer help if needed.
+- For “positive”: Appreciate their words and gently offer help if needed.
+- Any abusive, harassing, or insulting language (e.g., cheater, scammer, fraud, hate speech) must be labeled “negative” with no DM so it can be removed.
 - Skip DMs for “negative” or “other” intents.
 - Add light emojis (😊, 🙌, 💬) only when they make the message friendlier.
 - Always sound human — avoid robotic or scripted tones.

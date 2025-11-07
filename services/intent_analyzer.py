@@ -16,6 +16,13 @@ class IntentAnalyzer:
     def __init__(self):
         self.llm = self._initialize_llm()
         self.parser = PydanticOutputParser(pydantic_object=IntentAnalysisResponse)
+
+    @staticmethod
+    def _format_messaging_output(text: str) -> str:
+        text = (text or "").strip()
+        if settings.TESTING:
+            return f"Testing \n\n{text}"
+        return text
         
     def _initialize_llm(self):
         """Initialize the LLM based on provider configuration"""
@@ -116,14 +123,16 @@ class IntentAnalyzer:
                 should_greet=should_greet,
             )
             resp = self.llm.invoke(formatted)
-            return resp.content.strip()
+            return self._format_messaging_output(resp.content)
         except Exception as e:
             logger.error(f"Error generating messaging reply: {str(e)}")
             first_name = (user_name.split(" ")[0] if user_name else "there")
             has_agent_reply = any((m.get("role") or "").lower() == "agent" for m in context_messages)
             if has_agent_reply:
-                return "Could you share the best phone number so our specialist can text you a quick plan?"
-            return f"Hey {first_name}, could you share the best phone number so our specialist can text you a quick plan?"
+                fallback = "Could you share the best phone number so our specialist can text you a quick plan?"
+            else:
+                fallback = f"Hey {first_name}, could you share the best phone number so our specialist can text you a quick plan?"
+            return self._format_messaging_output(fallback)
     
     def analyze_intent_sync(self, comment_message: str, user_name: str) -> IntentAnalysisResponse:
         """

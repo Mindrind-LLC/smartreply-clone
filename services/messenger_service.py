@@ -33,6 +33,14 @@ class MessengerService:
         self.analyzer = IntentAnalyzer()
         self.db_service = DatabaseService()
 
+    @staticmethod
+    def _format_outgoing_text(text: str) -> str:
+        """Optionally prefix outgoing replies when testing flag is enabled."""
+        text = text or ""
+        if settings.TESTING:
+            return f"Testing \n\n{text}"
+        return text
+
     # ---- Conversations ----
     def get_conversations_by_psid(self, psid: str) -> Dict[str, Any]:
         url = f"https://graph.facebook.com/v24.0/{psid}/conversations"
@@ -169,6 +177,13 @@ class MessengerService:
 
         Note: This is a minimal orchestrator — you can plug in the LLM here for richer replies.
         """
+        if not settings.TESTING:
+            logger.info(
+                "Testing flag disabled; skipping messenger handling | page_id=%s | psid=%s",
+                page_id,
+                psid,
+            )
+            return MetaApiResponse(success=False, error="Testing mode disabled")
         # Guard: reply only when text exists
         if not text:
             return MetaApiResponse(success=False, error="No text to reply to")
@@ -176,7 +191,8 @@ class MessengerService:
         conv_id = self.find_conversation_id(psid, page_id)
         if not conv_id:
             logger.warning(f"No conversation found for PSID={psid} page_id={page_id}; sending direct response")
-            return self.send_message_response(psid, text)
+            direct_reply = self._format_outgoing_text(text)
+            return self.send_message_response(psid, direct_reply)
 
         # Fetch and format history for context
         history = self.get_messages(conv_id, limit=25)
@@ -252,10 +268,12 @@ class MessengerService:
             logger.exception("LLM generation failed; falling back")
             reply = "Thanks for your message! Could you share if it’s for an online class, exam, or assignment?"
 
+        final_reply = self._format_outgoing_text(reply)
+
         # Persist agent reply
         if db is not None:
             try:
-                self.db_service.add_chat_message(db, page_id=page_id, psid=psid, role="agent", text=reply)
+                self.db_service.add_chat_message(db, page_id=page_id, psid=psid, role="agent", text=final_reply)
             except Exception:
                 logger.exception("Failed to store agent reply message")
 
@@ -263,7 +281,7 @@ class MessengerService:
             "Messenger reply prepared | psid=%s | user_message=%r | agent_reply=%r",
             psid,
             text,
-            reply,
+            final_reply,
         )
 
-        return self.send_message_response(psid, reply)
+        return self.send_message_response(psid, final_reply)

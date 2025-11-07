@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
-from models.database import Comment, ChatMessage, Chat, get_db
+from models.database import Comment, ChatMessage, Chat, DeletedComment, get_db
 
 logger = logging.getLogger(__name__)
 
@@ -313,3 +313,39 @@ class DatabaseService:
             db.rollback()
             logger.error(f"Error deleting comment {comment_id}: {str(e)}")
             return False
+
+    def log_deleted_comment(
+        self,
+        db: Session,
+        *,
+        comment_id: Optional[str],
+        post_id: Optional[str],
+        user_id: Optional[str],
+        user_name: Optional[str],
+        message: Optional[str],
+        intent: Optional[str],
+        comment_timestamp: Optional[datetime],
+        removal_reason: Optional[str] = None,
+    ) -> DeletedComment:
+        """Persist metadata for a deleted comment."""
+        try:
+            record = DeletedComment(
+                comment_id=comment_id,
+                post_id=post_id,
+                user_id=user_id,
+                user_name=user_name,
+                message=message,
+                intent=intent,
+                comment_timestamp=comment_timestamp,
+                removal_reason=removal_reason,
+                removed_at=datetime.utcnow(),
+            )
+            db.add(record)
+            db.commit()
+            db.refresh(record)
+            logger.info(f"Logged deleted comment {comment_id} ({removal_reason})")
+            return record
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Error logging deleted comment {comment_id}: {str(e)}")
+            raise
