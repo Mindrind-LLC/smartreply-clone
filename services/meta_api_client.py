@@ -36,6 +36,8 @@ class MetaApiClient:
                 raise ValueError(f"Invalid PAGE_ACCESS_TOKEN: {data}")
         except requests.RequestException as e:
             raise ValueError(f"Failed to validate PAGE_ACCESS_TOKEN: {str(e)}") from e
+
+    # (Messenger HTTP helpers moved to MessengerService)
     
     async def send_private_reply(self, comment_id: str, message: str, page_id: str = None) -> MetaApiResponse:
         """

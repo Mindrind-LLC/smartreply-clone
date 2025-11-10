@@ -36,7 +36,18 @@ LLM_MODEL=gpt-3.5-turbo
 
 # Database Configuration
 DATABASE_URL=sqlite:///./comments.db
+
+# Comment Moderation (optional)
+META_GRAPH_API_VERSION=v24.0
+HARMFUL_COMMENT_KEYWORDS=cheater,cheaters,scam,scams,scammer,scammers,fraud,fake
+
+# Feature Flags
+TESTING=false
 ```
+
+- `META_GRAPH_API_VERSION` lets you pin the Graph API version used for deletion calls.
+- `HARMFUL_COMMENT_KEYWORDS` is a comma-separated list of phrases that help label why a negative comment was removed (removals now only happen for LLM-tagged `negative` intents).
+- `TESTING=true` will prefix every Messenger response with `Testing` and persist chat history; when `false`, Messenger events are ignored entirely (no AI call, DB write, or outbound reply).
 
 ### 3. Run the Application
 
@@ -74,6 +85,12 @@ The `comments` table stores:
 - Intent analysis results
 - Generated DM message
 - DM sending status and timestamp
+
+The `deleted_comments` table stores:
+- Original comment metadata when a comment is removed (IDs, user info, text)
+- The intent detected for that comment
+- When it was originally created and when it was removed
+- The removal reason (auto moderation vs webhook removal)
 
 ## Configuration
 

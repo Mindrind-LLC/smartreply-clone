@@ -10,6 +10,7 @@ class Settings:
     PAGE_ACCESS_TOKEN: str = os.getenv("PAGE_ACCESS_TOKEN", "")
     META_APP_ID: str = os.getenv("META_APP_ID", "")
     META_APP_SECRET: str = os.getenv("META_APP_SECRET", "")
+    META_GRAPH_API_VERSION: str = os.getenv("META_GRAPH_API_VERSION", "v24.0")
     
     # LLM Configuration
     # OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
@@ -43,6 +44,16 @@ class Settings:
             "Our vision is to offer excellent academic solutions for students of all levels across diverse project types. ScholarlyHelp is proudly owned by Eliya Enterprises."
         )
     )
+
+    HARMFUL_COMMENT_KEYWORDS = [
+        keyword.strip().lower()
+        for keyword in os.getenv(
+            "HARMFUL_COMMENT_KEYWORDS",
+            "cheater,cheaters,scam,scams,scammer,scammers,fraud,fake"
+        ).split(",")
+        if keyword.strip()
+    ]
+    TESTING: bool = os.getenv("TESTING", "false").lower() in {"true", "1", "yes"}
     
     # Few-shot examples for DM generation
     DM_EXAMPLES = [
@@ -83,6 +94,21 @@ class Settings:
         },
         {
             "comment": "Very disappointed",
+            "intent": "negative",
+            "dm_message": ""  # No DM for negative intent
+        },
+        {
+            "comment": "You scammers stole my money.",
+            "intent": "negative",
+            "dm_message": ""  # No DM for negative intent
+        },
+        {
+            "comment": "Cheaters! Worst service ever.",
+            "intent": "negative",
+            "dm_message": ""  # No DM for negative intent
+        },
+        {
+            "comment": "Cheaters",
             "intent": "negative",
             "dm_message": ""  # No DM for negative intent
         },
