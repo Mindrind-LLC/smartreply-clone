@@ -38,6 +38,54 @@ class Comment(Base):
         return f"<Comment(id={self.id}, comment_id='{self.comment_id}', intent='{self.intent}')>"
 
 
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    page_id = Column(String, index=True, nullable=False)
+    psid = Column(String, index=True, nullable=False)
+    role = Column(String, nullable=False)  # 'user' | 'agent'
+    text = Column(Text, nullable=False)
+    created_time = Column(DateTime, default=datetime.utcnow, index=True)
+
+    def __repr__(self):
+        return f"<ChatMessage(id={self.id}, psid='{self.psid}', role='{self.role}')>"
+
+
+class Chat(Base):
+    __tablename__ = "chats"
+
+    id = Column(Integer, primary_key=True, index=True)
+    page_id = Column(String, index=True, nullable=True)
+    psid = Column(String, unique=True, index=True, nullable=False)
+    user_name = Column(String, nullable=True)
+    phone_number = Column(String, nullable=True)
+    last_message = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    def __repr__(self):
+        return f"<Chat(id={self.id}, psid='{self.psid}', phone='{self.phone_number}')>"
+
+
+class DeletedComment(Base):
+    __tablename__ = "deleted_comments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    comment_id = Column(String, index=True, nullable=True)
+    post_id = Column(String, nullable=True)
+    user_id = Column(String, nullable=True)
+    user_name = Column(String, nullable=True)
+    message = Column(Text, nullable=True)
+    intent = Column(String, nullable=True)
+    comment_timestamp = Column(DateTime, nullable=True)
+    removal_reason = Column(String, nullable=True)
+    removed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    def __repr__(self):
+        return f"<DeletedComment(id={self.id}, comment_id='{self.comment_id}', intent='{self.intent}')>"
+
+
 def create_tables():
     """Create all tables in the database"""
     Base.metadata.create_all(bind=engine)
