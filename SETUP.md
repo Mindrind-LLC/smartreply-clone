@@ -43,11 +43,28 @@ HARMFUL_COMMENT_KEYWORDS=cheater,cheaters,scam,scams,scammer,scammers,fraud,fake
 
 # Feature Flags
 TESTING=false
+
+# Google Sheets Logging (optional, for negative comment export)
+GOOGLE_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}'
+GOOGLE_SHEETS_SPREADSHEET_ID=1fZReDtZQcdHPO8NsOKeEh6yaWFU1cF4vtPKmeyT1wZ0
+GOOGLE_SHEETS_NEGATIVE_SHEET_NAME=Negative Comments
 ```
 
 - `META_GRAPH_API_VERSION` lets you pin the Graph API version used for deletion calls.
 - `HARMFUL_COMMENT_KEYWORDS` is a comma-separated list of phrases that help label why a negative comment was removed (removals now only happen for LLM-tagged `negative` intents).
 - `TESTING=true` will prefix every Messenger response with `Testing` and persist chat history; when `false`, Messenger events are ignored entirely (no AI call, DB write, or outbound reply).
+- `GOOGLE_SERVICE_ACCOUNT_JSON` is the raw (single-line) JSON for a Google service account with Sheets API access.
+- `GOOGLE_SHEETS_SPREADSHEET_ID` is the ID segment from your Google Sheet URL (between `/d/` and `/edit`).
+- `GOOGLE_SHEETS_NEGATIVE_SHEET_NAME` is the worksheet/tab to append rows to (defaults to `Sheet1`).
+
+### Google Sheets prerequisites
+
+1. Enable the **Google Sheets API** in a Google Cloud project.
+2. Create a **service account**, download its JSON key, and note the `client_email`.
+3. Share the target Google Sheet with that service-account email (Editor access).
+4. Store the JSON in `GOOGLE_SERVICE_ACCOUNT_JSON` (use `jq -c '.' creds.json`) and set the sheet ID/name variables.
+
+With these variables set, every negative comment automatically removed will also be appended to the configured Google Sheet alongside the local `deleted_comments` log.
 
 ### 3. Run the Application
 
