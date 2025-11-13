@@ -13,7 +13,7 @@ Add the following secrets in the repository settings so the workflow can reach y
 | --- | --- |
 | `VPS_HOST` | VPS IP or hostname (e.g., `148.230.93.34`) |
 | `VPS_USERNAME` | SSH username (e.g., `root`) |
-| `VPS_SSH_KEY` | Private key contents with access to the VPS |
+| `VPS_PASSWORD` | SSH password for that user |
 | `VPS_PORT` *(optional)* | SSH port, defaults to `22` if omitted |
 
-Ensure the public key is added to `~/.ssh/authorized_keys` on the VPS and that `smartreply-clone/` already exists on the server so the workflow commands succeed.
+Ensure the credentials are valid and that `smartreply-clone/` already exists on the server so the workflow commands succeed.
