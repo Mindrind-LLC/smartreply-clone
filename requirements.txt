@@ -9,3 +9,5 @@ langchain
 langchain-openai
 langchain-google-genai
 alembic
+gspread
+google-auth

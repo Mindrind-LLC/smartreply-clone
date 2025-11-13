@@ -8,6 +8,7 @@ from services.comment_moderator import CommentModerator
 from services.intent_analyzer import IntentAnalyzer
 from services.meta_api_client import MetaApiClient
 from services.database_service import DatabaseService
+from services.google_sheets_service import GoogleSheetsService
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +20,7 @@ class WebhookProcessor:
         self.meta_api_client = MetaApiClient()
         self.db_service = DatabaseService()
         self.comment_moderator = CommentModerator()
+        self.google_sheets_service = GoogleSheetsService()
     
     async def process_webhook_change(self, change, db: Session):
         """Process individual webhook change"""
@@ -112,6 +114,18 @@ class WebhookProcessor:
                                 intent=intent_response.intent,
                                 comment_timestamp=created_time,
                                 removal_reason=removal_reason,
+                            )
+                            self.google_sheets_service.append_negative_comment(
+                                {
+                                    "comment_id": comment_id,
+                                    "post_id": post_id,
+                                    "user_id": user_id,
+                                    "user_name": user_name,
+                                    "message": message,
+                                    "intent": intent_response.intent,
+                                    "removal_reason": removal_reason,
+                                    "comment_timestamp": created_time,
+                                }
                             )
                         except Exception as log_err:
                             logger.error(f"Failed to log deleted comment {comment_id}: {log_err}")

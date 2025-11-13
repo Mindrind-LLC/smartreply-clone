@@ -54,6 +54,11 @@ class Settings:
         if keyword.strip()
     ]
     TESTING: bool = os.getenv("TESTING", "false").lower() in {"true", "1", "yes"}
+
+    # Google Sheets configuration for negative comment logging
+    GOOGLE_SERVICE_ACCOUNT_JSON: str = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "")
+    GOOGLE_SHEETS_SPREADSHEET_ID: str = os.getenv("GOOGLE_SHEETS_SPREADSHEET_ID", "")
+    GOOGLE_SHEETS_NEGATIVE_SHEET_NAME: str = os.getenv("GOOGLE_SHEETS_NEGATIVE_SHEET_NAME", "Sheet1")
     
     # Few-shot examples for DM generation
     DM_EXAMPLES = [
