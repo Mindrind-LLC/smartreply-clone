@@ -17,7 +17,6 @@ jobs:
 
   deploy-developer:
     name: Deploy to VPS (developer)
-    needs: build-and-test
     if: github.event_name == 'push' && github.ref == 'refs/heads/developer'
     runs-on: ubuntu-latest
 
